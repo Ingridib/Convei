@@ -32,3 +32,21 @@ contract UniqueIdToken {
         uniqueId = token.uniqueId;
     }
 }
+
+ function getTokensByOwner(address owner) public view returns (uint) {
+        return tokensByOwner[owner];
+    }
+
+    function transferToken(uint tokenId, address newOwner) public {
+        require(tokenById[tokenId].owner == msg.sender, "Token is not owned by the sender.");
+        tokenById[tokenId].owner = newOwner;
+        tokensByOwner[newOwner] += 1;
+        tokensByOwner[msg.sender] -= 1;
+    }
+
+    function generateLabel(uint tokenId) public view returns (string memory) {
+        Token memory token = tokenById[tokenId];
+        require(token.owner == msg.sender, "Token is not owned by the sender.");
+        return string(abi.encodePacked("This data is labeled with unique ID: ", token.uniqueId.toString(), " and is released under the GNU General Public License v3.0 (GPLv3)"));
+    }
+}
