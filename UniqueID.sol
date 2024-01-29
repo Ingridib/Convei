@@ -12,36 +12,52 @@ contract UniqueIdToken {
     struct Token {
         address owner;
         uint uniqueId;
+        bool transferable;
     }
 
     mapping (uint => Token) public tokenById;
+    mapping (address => uint) public tokensByOwner;
     uint private _tokenIdCounter;
 
+    constructor() {
+        _tokenIdCounter = 1;
+    }
+
     function generateToken() public returns (uint) {
-        require(_tokenIdCounter < type(uint).max, "Maximum number of tokens reached.");
+        require(_tokenIdCounter <= type(uint).max, "Maximum number of tokens reached.");
         Token memory newToken;
         newToken.owner = msg.sender;
         newToken.uniqueId = _tokenIdCounter;
+        newToken.transferable = true;
         tokenById[_tokenIdCounter] = newToken;
+        tokensByOwner[msg.sender] += 1;
         return _tokenIdCounter++;
     }
 
-    function getTokenById(uint tokenId) public view returns (address owner, uint uniqueId) {
+    function getTokenById(uint tokenId) public view returns (address owner, uint uniqueId, bool transferable) {
         Token memory token = tokenById[tokenId];
         owner = token.owner;
         uniqueId = token.uniqueId;
+        transferable = token.transferable;
     }
-}
 
- function getTokensByOwner(address owner) public view returns (uint) {
+    function getTokensByOwner(address owner) public view returns (uint) {
         return tokensByOwner[owner];
     }
 
     function transferToken(uint tokenId, address newOwner) public {
-        require(tokenById[tokenId].owner == msg.sender, "Token is not owned by the sender.");
-        tokenById[tokenId].owner = newOwner;
+        Token memory token = tokenById[tokenId];
+        require(token.owner == msg.sender, "Token is not owned by the sender.");
+        require(token.transferable, "Token is not transferable.");
+        token.owner = newOwner;
         tokensByOwner[newOwner] += 1;
         tokensByOwner[msg.sender] -= 1;
+    }
+
+    function setTransferable(uint tokenId, bool newTransferable) public {
+        Token memory token = tokenById[tokenId];
+        require(token.owner == msg.sender, "Token is not owned by the sender.");
+        token.transferable = newTransferable;
     }
 
     function generateLabel(uint tokenId) public view returns (string memory) {
